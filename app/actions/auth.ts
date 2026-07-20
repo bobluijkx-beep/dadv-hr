@@ -28,3 +28,26 @@ export async function logout(): Promise<void> {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+export type SetPasswordState = { error: string | null };
+
+export async function setPassword(_prevState: SetPasswordState, formData: FormData): Promise<SetPasswordState> {
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (password.length < 8) {
+    return { error: "Wachtwoord moet minimaal 8 tekens bevatten." };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Wachtwoorden komen niet overeen." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: "Opslaan mislukt: " + error.message };
+  }
+
+  redirect("/");
+}

@@ -29,6 +29,25 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  // Handles Supabase's PKCE-style email links (invite/recovery/magic link),
+  // which redirect back as `?code=...`. Must run before auth.getUser() below
+  // and before any redirect a page might issue, since a query string (unlike
+  // a URL fragment) is dropped once that redirect happens.
+  //
+  // This app has no other use of the code-exchange flow (no OAuth, no magic
+  // links yet), so any `?code=` is always an invite or password-reset link —
+  // send it straight to the "set a password" page unless a `next` override
+  // was explicitly supplied.
+  const code = request.nextUrl.searchParams.get("code");
+  if (code) {
+    await supabase.auth.exchangeCodeForSession(code);
+    const redirectUrl = request.nextUrl.clone();
+    const next = redirectUrl.searchParams.get("next");
+    redirectUrl.search = "";
+    redirectUrl.pathname = next || "/account/wachtwoord-instellen";
+    return NextResponse.redirect(redirectUrl, { headers: supabaseResponse.headers });
+  }
+
   // Required: triggers a token refresh and must be called before any other
   // Supabase call in the request. Do not remove or reorder.
   await supabase.auth.getUser();
