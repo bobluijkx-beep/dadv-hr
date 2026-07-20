@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { requireProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { logout } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const roleLabels: Record<string, string> = {
   admin: "Beheerder",
@@ -25,10 +25,11 @@ export default async function Home() {
     : { data: null };
 
   const displayName = employee ? `${employee.first_name} ${employee.last_name}` : "Onbekend";
+  const canSeeEmployees = profile.role === "admin" || profile.role === "hr" || profile.role === "manager";
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-muted/30 px-4 py-16">
-      <Card className="w-full max-w-md">
+    <div className="flex flex-col gap-6">
+      <Card className="max-w-md">
         <CardHeader>
           <CardTitle>Welkom, {displayName}</CardTitle>
           <CardDescription>{employee?.job_title ?? "Geen functie geregistreerd"}</CardDescription>
@@ -38,15 +39,12 @@ export default async function Home() {
             <span className="text-sm text-muted-foreground">Rol:</span>
             <Badge variant="secondary">{roleLabels[profile.role] ?? profile.role}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Fase 1 (architectuur, database, Auth) is actief. De HR-modules (dossiers, contracten,
-            verlof, overuren, verzuim, dashboards) volgen in de eerstvolgende fases.
-          </p>
-          <form action={logout}>
-            <Button type="submit" variant="outline" className="w-full">
-              Uitloggen
-            </Button>
-          </form>
+          <div className="flex gap-2">
+            {canSeeEmployees && (
+              <Button size="sm" nativeButton={false} render={<Link href="/medewerkers">Naar medewerkers</Link>} />
+            )}
+            <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/mijn-gegevens">Mijn gegevens</Link>} />
+          </div>
         </CardContent>
       </Card>
     </div>

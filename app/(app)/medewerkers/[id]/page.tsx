@@ -1,0 +1,191 @@
+import { notFound } from "next/navigation";
+import { requireProfile } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getEmployeeCore,
+  getCurrentAddress,
+  getAddressHistory,
+  getCurrentContact,
+  getContactHistory,
+  getPrivateDetails,
+  getChildren,
+  getDepartments,
+  getManagerOptions,
+  decryptBsn,
+} from "@/lib/services/employees";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  PersonalInfoForm,
+  BsnField,
+  WorkInfoForm,
+  AddressForm,
+  ContactForm,
+  PrivateDetailsForm,
+  ChildrenList,
+} from "@/components/employees/dossier-forms";
+
+export default async function MedewerkerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const employee = await getEmployeeCore(supabase, id).catch(() => null);
+  if (!employee) notFound();
+
+  const isSelf = profile.employee_id === id;
+  const canEditCore = profile.role === "admin" || profile.role === "hr";
+  const canEditContact = canEditCore || isSelf;
+  const canSeePrivate = canEditCore || isSelf;
+
+  const [address, addressHistory, contact, contactHistory, departments, managerOptions] = await Promise.all([
+    getCurrentAddress(supabase, id),
+    getAddressHistory(supabase, id),
+    getCurrentContact(supabase, id),
+    getContactHistory(supabase, id),
+    getDepartments(supabase),
+    getManagerOptions(supabase),
+  ]);
+
+  const [privateDetails, children] = canSeePrivate
+    ? await Promise.all([getPrivateDetails(supabase, id), getChildren(supabase, id)])
+    : [null, []];
+
+  const bsn = canEditCore ? await decryptBsn(supabase, employee.bsn_encrypted).catch(() => null) : null;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">
+            {employee.first_name} {employee.insertion ? `${employee.insertion} ` : ""}
+            {employee.last_name}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {employee.job_title ?? "Geen functie"} · {employee.employee_number}
+          </p>
+        </div>
+        <Badge variant={employee.is_active ? "default" : "secondary"}>
+          {employee.is_active ? "Actief" : "Inactief"}
+        </Badge>
+      </div>
+
+      <Tabs defaultValue="persoonlijk">
+        <TabsList>
+          <TabsTrigger value="persoonlijk">Persoonlijk</TabsTrigger>
+          {canSeePrivate && <TabsTrigger value="prive">Privé</TabsTrigger>}
+          <TabsTrigger value="werk">Werk</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="persoonlijk" className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Persoonlijke gegevens</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <PersonalInfoForm data={{ employeeId: id, ...employee }} editable={canEditCore} />
+              {canEditCore && (
+                <BsnField employeeId={id} hasBsn={Boolean(employee.bsn_encrypted)} decrypted={bsn} />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Adres</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {canEditContact ? (
+                <AddressForm employeeId={id} current={address} />
+              ) : (
+                <p className="text-sm">
+                  {address ? `${address.street}, ${address.postal_code} ${address.city}` : "Geen adres bekend."}
+                </p>
+              )}
+              {addressHistory.length > 1 && (
+                <details className="text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">Adreshistorie ({addressHistory.length})</summary>
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {addressHistory.map((a) => (
+                      <li key={a.id}>
+                        {a.street}, {a.postal_code} {a.city} ({a.valid_from} – {a.valid_to ?? "heden"})
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Contactgegevens</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {canEditContact ? (
+                <ContactForm employeeId={id} current={contact} />
+              ) : (
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <dt className="text-muted-foreground">Telefoon</dt>
+                  <dd>{contact?.phone ?? "—"}</dd>
+                  <dt className="text-muted-foreground">E-mail</dt>
+                  <dd>{contact?.email ?? "—"}</dd>
+                </dl>
+              )}
+              {contactHistory.length > 1 && (
+                <details className="text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">Contacthistorie ({contactHistory.length})</summary>
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {contactHistory.map((c) => (
+                      <li key={c.id}>
+                        {c.phone ?? "—"} · {c.email ?? "—"} ({c.valid_from} – {c.valid_to ?? "heden"})
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {canSeePrivate && (
+          <TabsContent value="prive" className="flex flex-col gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Privégegevens</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PrivateDetailsForm employeeId={id} current={privateDetails} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Kinderen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChildrenList employeeId={id} kids={children} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        <TabsContent value="werk">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Werkgegevens</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WorkInfoForm
+                data={{ employeeId: id, ...employee }}
+                editable={canEditCore}
+                departments={departments}
+                managerOptions={managerOptions}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

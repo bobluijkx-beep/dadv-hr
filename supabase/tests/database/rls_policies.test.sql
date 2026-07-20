@@ -6,7 +6,7 @@
 -- end so it never pollutes a real database.
 
 begin;
-select plan(9);
+select plan(10);
 
 -- ---------------------------------------------------------------------
 -- Fixtures (created as the unrestricted `postgres` role, i.e. before we
@@ -75,15 +75,22 @@ select results_eq(
 );
 
 -- ---------------------------------------------------------------------
--- As the employee (Ellen): should see only her own row, never Olaf's.
+-- As the employee (Ellen): sees herself and her own manager (Manon) —
+-- needed to resolve "Leidinggevende: ..." on her dossier — but never
+-- an unrelated employee (Olaf).
 -- ---------------------------------------------------------------------
 
 set local "request.jwt.claims" = '{"sub": "10000000-0000-0000-0000-000000000402", "role": "authenticated"}';
 
 select results_eq(
   $$select count(*) from public.employees$$,
-  array[1::bigint],
-  'employee sees exactly one employees row: their own'
+  array[2::bigint],
+  'employee sees exactly two employees rows: herself and her own manager'
+);
+
+select isnt_empty(
+  $$select 1 from public.employees where id = '10000000-0000-0000-0000-000000000101'$$,
+  'employee can select her own manager''s row (select own manager policy)'
 );
 
 select is_empty(

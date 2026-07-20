@@ -9,7 +9,7 @@ Nederlandse HR Portal MVP — personeelsdossiers, contracten, salaris, roosters,
 
 ## Status
 
-**Fase 1 — architectuur, database, Auth.** Zie de roadmap in het functioneel ontwerp voor de volgende fases (personeelsdossiers, contractbeheer, documentbeheer, roosters, overuren, verlof, verzuim, dashboards, Resend, AFAS-voorbereiding).
+**Fase 1 (architectuur, database, Auth) en Fase 2 (personeelsdossiers) zijn klaar** — beide geverifieerd tegen een live Supabase-project. Fase 2 levert: medewerkersoverzicht (zoeken/filteren, rolgescoped via RLS), dossierdetail met Persoonlijk/Privé/Werk-tabs, adres- en contacthistorie, BSN invoeren/wijzigen (versleuteld), en het aanmaken van nieuwe medewerkers. Zie de roadmap in het functioneel ontwerp voor de volgende fases (contractbeheer, documentbeheer, roosters, overuren, verlof, verzuim, dashboards, Resend, AFAS-voorbereiding).
 
 ## Snel starten
 
