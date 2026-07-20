@@ -13,6 +13,11 @@ import {
   getManagerOptions,
   decryptBsn,
 } from "@/lib/services/employees";
+import {
+  getContractsForEmployee,
+  getCompensationForContracts,
+  getSalaryHistory,
+} from "@/lib/services/contracts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +30,7 @@ import {
   PrivateDetailsForm,
   ChildrenList,
 } from "@/components/employees/dossier-forms";
+import { ContractCard, NewContractForm, SalaryHistoryTable } from "@/components/employees/contract-forms";
 
 export default async function MedewerkerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,6 +60,14 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
 
   const bsn = canEditCore ? await decryptBsn(supabase, employee.bsn_encrypted).catch(() => null) : null;
 
+  const contracts = await getContractsForEmployee(supabase, id);
+  const [compensationMap, salaryHistory] = canEditCore
+    ? await Promise.all([
+        getCompensationForContracts(supabase, contracts.map((c) => c.id)),
+        getSalaryHistory(supabase, id),
+      ])
+    : [new Map(), []];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -76,6 +90,7 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
           <TabsTrigger value="persoonlijk">Persoonlijk</TabsTrigger>
           {canSeePrivate && <TabsTrigger value="prive">Privé</TabsTrigger>}
           <TabsTrigger value="werk">Werk</TabsTrigger>
+          <TabsTrigger value="contract">Contract</TabsTrigger>
         </TabsList>
 
         <TabsContent value="persoonlijk" className="flex flex-col gap-6">
@@ -184,6 +199,33 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="contract" className="flex flex-col gap-6">
+          {contracts.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nog geen contracten geregistreerd.</p>
+          )}
+          {contracts.map((contract) => (
+            <ContractCard
+              key={contract.id}
+              employeeId={id}
+              contract={contract}
+              compensation={compensationMap.get(contract.id) ?? null}
+              editable={canEditCore}
+            />
+          ))}
+          {canEditCore && <NewContractForm employeeId={id} />}
+
+          {canEditCore && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Salarishistorie</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SalaryHistoryTable rows={salaryHistory} />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
