@@ -18,6 +18,7 @@ import {
   getCompensationForContracts,
   getSalaryHistory,
 } from "@/lib/services/contracts";
+import { getDocuments, getVersionsForDocuments } from "@/lib/services/documents";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +32,12 @@ import {
   ChildrenList,
 } from "@/components/employees/dossier-forms";
 import { ContractCard, NewContractForm, SalaryHistoryTable } from "@/components/employees/contract-forms";
+import {
+  UploadDocumentForm,
+  NewVersionForm,
+  DownloadButton,
+  categoryLabels,
+} from "@/components/employees/document-forms";
 
 export default async function MedewerkerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -68,6 +75,10 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
       ])
     : [new Map(), []];
 
+  const documents = await getDocuments(supabase, id);
+  const versionsByDocument = await getVersionsForDocuments(supabase, documents.map((d) => d.id));
+  const canUploadDocuments = canEditCore || isSelf;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -91,6 +102,7 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
           {canSeePrivate && <TabsTrigger value="prive">Privé</TabsTrigger>}
           <TabsTrigger value="werk">Werk</TabsTrigger>
           <TabsTrigger value="contract">Contract</TabsTrigger>
+          <TabsTrigger value="documenten">Documenten</TabsTrigger>
         </TabsList>
 
         <TabsContent value="persoonlijk" className="flex flex-col gap-6">
@@ -226,6 +238,47 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="documenten" className="flex flex-col gap-6">
+          {canUploadDocuments && <UploadDocumentForm employeeId={id} />}
+
+          {documents.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nog geen documenten geüpload.</p>
+          )}
+          {documents.map((doc) => {
+            const versions = versionsByDocument.get(doc.id) ?? [];
+            const [current, ...older] = versions;
+            return (
+              <Card key={doc.id}>
+                <CardHeader className="flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle className="text-base">{categoryLabels[doc.category] ?? doc.category}</CardTitle>
+                    <p className="text-xs text-muted-foreground">{current?.file_name ?? "Geen bestand"}</p>
+                  </div>
+                  {current && <DownloadButton documentVersionId={current.id} label="Downloaden" />}
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  {canUploadDocuments && <NewVersionForm documentId={doc.id} employeeId={id} />}
+                  {older.length > 0 && (
+                    <details className="text-xs text-muted-foreground">
+                      <summary className="cursor-pointer">Eerdere versies ({older.length})</summary>
+                      <ul className="mt-2 flex flex-col gap-2">
+                        {older.map((v) => (
+                          <li key={v.id} className="flex items-center gap-2">
+                            <span>
+                              v{v.version_number} — {v.file_name}
+                            </span>
+                            <DownloadButton documentVersionId={v.id} label="Download" />
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </TabsContent>
       </Tabs>
     </div>

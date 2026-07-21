@@ -9,7 +9,7 @@ Nederlandse HR Portal MVP — personeelsdossiers, contracten, salaris, roosters,
 
 ## Status
 
-**Fase 1 (architectuur, database, Auth), Fase 2 (personeelsdossiers) en Fase 3 (contractbeheer) zijn klaar** — alle drie geverifieerd tegen een live Supabase-project, en Fase 1+2 draaien ook al in productie op Vercel. Fase 3 levert: een Contract-tab op het dossier met meerdere contracten per medewerker (historie), salarisbeheer met automatische salarishistorie (oud/nieuw/verschil/percentage/reden) en een nieuw-contractformulier — salaris blijft, zoals in het ontwerp vastgelegd, volledig ontoegankelijk voor leidinggevenden en medewerkers. Zie de roadmap in het functioneel ontwerp voor de volgende fases (documentbeheer, roosters, overuren, verlof, verzuim, dashboards, Resend, AFAS-voorbereiding).
+**Fase 1 t/m 4 zijn klaar** (architectuur/Auth, personeelsdossiers, contractbeheer, documentbeheer) — allemaal geverifieerd tegen een live Supabase-project, en draaien in productie op Vercel. Fase 4 levert: een Documenten-tab op het dossier met upload/versiebeheer via Supabase Storage. Bestanden zijn nooit publiek — downloaden gaat altijd via een kortlevende signed URL die pas wordt gegenereerd nadat de RLS-gescoopte metadata-query is geslaagd, dus een leidinggevende kan bijvoorbeeld nooit bij een verzuimdocument, ook niet via de storage-laag. Zie de roadmap in het functioneel ontwerp voor de volgende fases (roosters, overuren, verlof, verzuim, dashboards, Resend, AFAS-voorbereiding).
 
 ## Snel starten
 
