@@ -19,6 +19,7 @@ import {
   getSalaryHistory,
 } from "@/lib/services/contracts";
 import { getDocuments, getVersionsForDocuments } from "@/lib/services/documents";
+import { getBreakRules, getSchedulePeriods, getScheduleDays } from "@/lib/services/schedules";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +39,11 @@ import {
   DownloadButton,
   categoryLabels,
 } from "@/components/employees/document-forms";
+import {
+  CurrentScheduleCard,
+  NewSchedulePeriodForm,
+  ScheduleHistoryList,
+} from "@/components/employees/schedule-forms";
 
 export default async function MedewerkerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -79,6 +85,15 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
   const versionsByDocument = await getVersionsForDocuments(supabase, documents.map((d) => d.id));
   const canUploadDocuments = canEditCore || isSelf;
 
+  const canEditSchedule = canEditCore || profile.role === "manager";
+  const schedulePeriods = await getSchedulePeriods(supabase, id);
+  const currentPeriod = schedulePeriods.find((p) => p.end_date === null) ?? null;
+  const [currentScheduleDays, breakRules] = await Promise.all([
+    currentPeriod ? getScheduleDays(supabase, currentPeriod.id) : Promise.resolve([]),
+    getBreakRules(supabase, profile.organization_id),
+  ]);
+  const contractHoursPerWeek = contracts[0]?.hours_per_week ?? null;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -102,6 +117,7 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
           {canSeePrivate && <TabsTrigger value="prive">Privé</TabsTrigger>}
           <TabsTrigger value="werk">Werk</TabsTrigger>
           <TabsTrigger value="contract">Contract</TabsTrigger>
+          <TabsTrigger value="rooster">Rooster</TabsTrigger>
           <TabsTrigger value="documenten">Documenten</TabsTrigger>
         </TabsList>
 
@@ -235,6 +251,33 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
               </CardHeader>
               <CardContent>
                 <SalaryHistoryTable rows={salaryHistory} />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="rooster" className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Huidig rooster</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <CurrentScheduleCard
+                days={currentScheduleDays}
+                breakRules={breakRules}
+                contractHoursPerWeek={contractHoursPerWeek}
+              />
+              <ScheduleHistoryList periods={schedulePeriods} />
+            </CardContent>
+          </Card>
+
+          {canEditSchedule && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Nieuw rooster vastleggen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NewSchedulePeriodForm employeeId={id} />
               </CardContent>
             </Card>
           )}

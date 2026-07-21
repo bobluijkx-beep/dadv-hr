@@ -9,7 +9,7 @@ Nederlandse HR Portal MVP — personeelsdossiers, contracten, salaris, roosters,
 
 ## Status
 
-**Fase 1 t/m 4 zijn klaar** (architectuur/Auth, personeelsdossiers, contractbeheer, documentbeheer) — allemaal geverifieerd tegen een live Supabase-project, en draaien in productie op Vercel. Fase 4 levert: een Documenten-tab op het dossier met upload/versiebeheer via Supabase Storage. Bestanden zijn nooit publiek — downloaden gaat altijd via een kortlevende signed URL die pas wordt gegenereerd nadat de RLS-gescoopte metadata-query is geslaagd, dus een leidinggevende kan bijvoorbeeld nooit bij een verzuimdocument, ook niet via de storage-laag. Zie de roadmap in het functioneel ontwerp voor de volgende fases (roosters, overuren, verlof, verzuim, dashboards, Resend, AFAS-voorbereiding).
+**Fase 1 t/m 5 zijn klaar** (architectuur/Auth, personeelsdossiers, contractbeheer, documentbeheer, roosters) — allemaal geverifieerd tegen een live Supabase-project, en draaien in productie op Vercel. Fase 5 levert: een Rooster-tab op het dossier (historische roosterperiodes, uren per dag) en een Instellingen-pagina (admin) voor de organisatiebrede pauzeregels. Bruto uren per dag komen uit de vaste `computed_hours`-kolom; de pauzeaftrek (bv. >5,5u = -30min, >8u = -45min) wordt in de applicatielaag toegepast zodat regels aanpasbaar zijn zonder migratie. Leidinggevenden mogen roosters van hun team bewerken (RLS `is_manager_of`), medewerkers zien alleen hun eigen rooster. Zie de roadmap in het functioneel ontwerp voor de volgende fases (overuren, verlof, verzuim, dashboards, Resend, AFAS-voorbereiding).
 
 ## Snel starten
 

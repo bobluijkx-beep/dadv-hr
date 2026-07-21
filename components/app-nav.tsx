@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", roles: ["admin", "hr", "manager", "employee"] },
   { href: "/medewerkers", label: "Medewerkers", roles: ["admin", "hr", "manager"] },
   { href: "/mijn-gegevens", label: "Mijn gegevens", roles: ["admin", "hr", "manager", "employee"] },
+  { href: "/instellingen", label: "Instellingen", roles: ["admin"] },
 ];
 
 export function AppNav({ role }: { role: UserRole }) {
