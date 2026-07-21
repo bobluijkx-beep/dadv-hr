@@ -20,6 +20,7 @@ import {
 } from "@/lib/services/contracts";
 import { getDocuments, getVersionsForDocuments } from "@/lib/services/documents";
 import { getBreakRules, getSchedulePeriods, getScheduleDays } from "@/lib/services/schedules";
+import { getOvertimeEntries, computeOvertimeSummary } from "@/lib/services/overtime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,6 +45,11 @@ import {
   NewSchedulePeriodForm,
   ScheduleHistoryList,
 } from "@/components/employees/schedule-forms";
+import {
+  OvertimeSummary,
+  NewOvertimeEntryForm,
+  OvertimeEntryRow,
+} from "@/components/employees/overtime-forms";
 
 export default async function MedewerkerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -94,6 +100,12 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
   ]);
   const contractHoursPerWeek = contracts[0]?.hours_per_week ?? null;
 
+  const canSubmitOvertime = canEditCore || isSelf;
+  const canApproveOvertime = canEditCore || profile.role === "manager";
+  const canProcessOvertimePayroll = canEditCore;
+  const overtimeEntries = await getOvertimeEntries(supabase, id);
+  const overtimeSummary = computeOvertimeSummary(overtimeEntries);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -118,6 +130,7 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
           <TabsTrigger value="werk">Werk</TabsTrigger>
           <TabsTrigger value="contract">Contract</TabsTrigger>
           <TabsTrigger value="rooster">Rooster</TabsTrigger>
+          <TabsTrigger value="overuren">Overuren</TabsTrigger>
           <TabsTrigger value="documenten">Documenten</TabsTrigger>
         </TabsList>
 
@@ -278,6 +291,48 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
               </CardHeader>
               <CardContent>
                 <NewSchedulePeriodForm employeeId={id} />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="overuren" className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Overzicht</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OvertimeSummary summary={overtimeSummary} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Registraties</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {overtimeEntries.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nog geen overuren geregistreerd.</p>
+              )}
+              {overtimeEntries.map((entry) => (
+                <OvertimeEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  employeeId={id}
+                  canApprove={canApproveOvertime}
+                  canProcessPayroll={canProcessOvertimePayroll}
+                />
+              ))}
+            </CardContent>
+          </Card>
+
+          {canSubmitOvertime && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Overuren registreren</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NewOvertimeEntryForm employeeId={id} />
               </CardContent>
             </Card>
           )}
