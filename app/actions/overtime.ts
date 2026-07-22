@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { calculatePeriodHours } from "@/lib/services/overtime";
+import { notifyOvertimeSubmitted, notifyOvertimeStatus } from "@/lib/services/notifications";
 
 export type ActionState = { error: string | null; success?: boolean };
 
@@ -56,15 +57,23 @@ export async function createOvertimeEntry(_prev: ActionState, formData: FormData
     parsed.data.period_end,
   );
 
-  const { error } = await supabase.from("overtime_entries").insert({
-    employee_id: parsed.data.employeeId,
-    period_start: parsed.data.period_start,
-    period_end: parsed.data.period_end,
-    worked_hours: workedHours,
-    contract_hours: contractHours,
-    notes: parsed.data.notes,
-  });
+  const { data: entry, error } = await supabase
+    .from("overtime_entries")
+    .insert({
+      employee_id: parsed.data.employeeId,
+      period_start: parsed.data.period_start,
+      period_end: parsed.data.period_end,
+      worked_hours: workedHours,
+      contract_hours: contractHours,
+      notes: parsed.data.notes,
+    })
+    .select("id")
+    .single();
   if (error) return fail("Registreren mislukt: " + error.message);
+
+  notifyOvertimeSubmitted(parsed.data.employeeId, entry.id, parsed.data.period_start, parsed.data.period_end).catch(
+    () => {},
+  );
 
   revalidatePath(`/medewerkers/${parsed.data.employeeId}`);
   revalidatePath("/mijn-gegevens");
@@ -121,8 +130,29 @@ export async function updateOvertimeStatus(_prev: ActionState, formData: FormDat
     ...(parsed.data.status === "goedgekeurd" && auth.user ? { approved_by: auth.user.id } : {}),
   };
 
-  const { error } = await supabase.from("overtime_entries").update(update).eq("id", parsed.data.id);
+  const { data: entry, error } = await supabase
+    .from("overtime_entries")
+    .update(update)
+    .eq("id", parsed.data.id)
+    .select("period_start, period_end")
+    .single();
   if (error) return fail("Bijwerken mislukt: " + error.message);
+
+  if (
+    entry &&
+    (parsed.data.status === "goedgekeurd" ||
+      parsed.data.status === "aangeboden_salarisadministratie" ||
+      parsed.data.status === "verwerkt")
+  ) {
+    notifyOvertimeStatus(
+      parsed.data.employeeId,
+      parsed.data.id,
+      parsed.data.status,
+      entry.period_start,
+      entry.period_end,
+      parsed.data.payout_percentage ? Number(parsed.data.payout_percentage) : null,
+    ).catch(() => {});
+  }
 
   revalidatePath(`/medewerkers/${parsed.data.employeeId}`);
   revalidatePath("/mijn-gegevens");

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { calculateScheduledHours } from "@/lib/services/schedules";
 import { computeAnnualEntitlement } from "@/lib/services/leave";
+import { notifyLeaveRequested, notifyLeaveDecided } from "@/lib/services/notifications";
 
 export type ActionState = { error: string | null; success?: boolean; message?: string };
 
@@ -133,14 +134,26 @@ export async function createLeaveRequest(_prev: ActionState, formData: FormData)
   );
   if (hours <= 0) return fail("Geen geplande werkuren in deze periode volgens het rooster.");
 
-  const { error } = await supabase.from("leave_requests").insert({
-    employee_id: parsed.data.employeeId,
-    leave_type_id: parsed.data.leaveTypeId,
-    start_date: parsed.data.start_date,
-    end_date: parsed.data.end_date,
-    hours,
-  });
+  const { data: request, error } = await supabase
+    .from("leave_requests")
+    .insert({
+      employee_id: parsed.data.employeeId,
+      leave_type_id: parsed.data.leaveTypeId,
+      start_date: parsed.data.start_date,
+      end_date: parsed.data.end_date,
+      hours,
+    })
+    .select("id, leave_type:leave_types(name)")
+    .single();
   if (error) return fail("Aanvragen mislukt: " + error.message);
+
+  notifyLeaveRequested(
+    parsed.data.employeeId,
+    request.id,
+    request.leave_type?.name ?? "Verlof",
+    parsed.data.start_date,
+    parsed.data.end_date,
+  ).catch(() => {});
 
   revalidatePath(`/medewerkers/${parsed.data.employeeId}`);
   revalidatePath("/mijn-gegevens");
@@ -178,6 +191,24 @@ export async function updateLeaveRequestStatus(_prev: ActionState, formData: For
       .update({ status: parsed.data.status })
       .eq("id", parsed.data.id);
     if (error) return fail("Bijwerken mislukt: " + error.message);
+  }
+
+  if (parsed.data.status === "goedgekeurd" || parsed.data.status === "afgewezen") {
+    const { data: request } = await supabase
+      .from("leave_requests")
+      .select("start_date, end_date, leave_type:leave_types(name)")
+      .eq("id", parsed.data.id)
+      .single();
+    if (request) {
+      notifyLeaveDecided(
+        parsed.data.employeeId,
+        parsed.data.id,
+        parsed.data.status === "goedgekeurd",
+        request.leave_type?.name ?? "Verlof",
+        request.start_date,
+        request.end_date,
+      ).catch(() => {});
+    }
   }
 
   revalidatePath(`/medewerkers/${parsed.data.employeeId}`);
