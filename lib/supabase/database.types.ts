@@ -1345,6 +1345,10 @@ export type Database = {
       }
     }
     Functions: {
+      approve_leave_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       auth_employee_id: { Args: never; Returns: string }
       auth_organization_id: { Args: never; Returns: string }
       auth_profile: {
@@ -1373,6 +1377,7 @@ export type Database = {
       encrypt_bsn: { Args: { bsn: string }; Returns: string }
       get_bsn_encryption_key: { Args: never; Returns: string }
       is_manager_of: { Args: { target_employee_id: string }; Returns: boolean }
+      is_own_manager: { Args: { target_employee_id: string }; Returns: boolean }
       purge_soft_deleted: { Args: { p_table_name: string }; Returns: number }
       set_employee_bsn: {
         Args: { p_bsn: string; p_employee_id: string }

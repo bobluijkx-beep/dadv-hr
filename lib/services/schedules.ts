@@ -69,3 +69,75 @@ export function computeWeeklyHours(days: ScheduleDay[], breakRules: BreakRule[])
 
   return { perDay, rawTotal, netTotal };
 }
+
+/** ISO-ish weekday matching schedule_days.weekday: 0 = maandag … 6 = zondag. */
+function isoWeekday(date: Date) {
+  return (date.getUTCDay() + 6) % 7;
+}
+
+function eachDate(start: string, end: string): Date[] {
+  const dates: Date[] = [];
+  const cur = new Date(start + "T00:00:00Z");
+  const last = new Date(end + "T00:00:00Z");
+  while (cur <= last) {
+    dates.push(new Date(cur));
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+function netHoursForDay(rawHours: number, breakRules: BreakRule[]) {
+  const applicable = [...breakRules].sort((a, b) => b.min_hours - a.min_hours).find((r) => rawHours > r.min_hours);
+  const deduction = applicable ? applicable.deduction_minutes / 60 : 0;
+  return Math.max(0, rawHours - deduction);
+}
+
+/**
+ * Walks every calendar day in [start, end] against the employee's schedule
+ * history — which schedule_period covers that date, and that period's
+ * schedule_days for the matching weekday — so a rooster change mid-range is
+ * handled correctly instead of assuming a single rooster for the whole span.
+ * Shared by overtime (worked hours) and leave (hours a request would cover).
+ */
+export async function calculateScheduledHours(
+  supabase: Client,
+  employeeId: string,
+  organizationId: string,
+  start: string,
+  end: string,
+) {
+  const [{ data: periods, error: periodsError }, breakRules] = await Promise.all([
+    supabase.from("schedule_periods").select("id, start_date, end_date").eq("employee_id", employeeId),
+    getBreakRules(supabase, organizationId),
+  ]);
+  if (periodsError) throw periodsError;
+
+  const periodIds = (periods ?? []).map((p) => p.id);
+  const daysByPeriod = new Map<string, { weekday: number; computed_hours: number }[]>();
+  if (periodIds.length > 0) {
+    const { data: days, error: daysError } = await supabase
+      .from("schedule_days")
+      .select("schedule_period_id, weekday, computed_hours")
+      .in("schedule_period_id", periodIds);
+    if (daysError) throw daysError;
+    for (const day of days ?? []) {
+      const list = daysByPeriod.get(day.schedule_period_id) ?? [];
+      list.push({ weekday: day.weekday, computed_hours: day.computed_hours ?? 0 });
+      daysByPeriod.set(day.schedule_period_id, list);
+    }
+  }
+
+  let totalHours = 0;
+  for (const date of eachDate(start, end)) {
+    const iso = date.toISOString().slice(0, 10);
+    const weekday = isoWeekday(date);
+    const schedulePeriod = (periods ?? []).find(
+      (p) => p.start_date <= iso && (p.end_date === null || p.end_date >= iso),
+    );
+    if (!schedulePeriod) continue;
+    const day = daysByPeriod.get(schedulePeriod.id)?.find((d) => d.weekday === weekday);
+    if (day) totalHours += netHoursForDay(day.computed_hours, breakRules);
+  }
+
+  return Math.round(totalHours * 100) / 100;
+}

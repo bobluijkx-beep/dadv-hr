@@ -21,6 +21,7 @@ import {
 import { getDocuments, getVersionsForDocuments } from "@/lib/services/documents";
 import { getBreakRules, getSchedulePeriods, getScheduleDays } from "@/lib/services/schedules";
 import { getOvertimeEntries, computeOvertimeSummary } from "@/lib/services/overtime";
+import { getLeaveTypes, getLeaveBalances, getLeaveRequests } from "@/lib/services/leave";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,6 +51,12 @@ import {
   NewOvertimeEntryForm,
   OvertimeEntryRow,
 } from "@/components/employees/overtime-forms";
+import {
+  LeaveBalanceCards,
+  StartLeaveYearForm,
+  NewLeaveRequestForm,
+  LeaveRequestRow,
+} from "@/components/employees/leave-forms";
 
 export default async function MedewerkerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -106,6 +113,16 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
   const overtimeEntries = await getOvertimeEntries(supabase, id);
   const overtimeSummary = computeOvertimeSummary(overtimeEntries);
 
+  const canRequestLeave = canEditCore || isSelf;
+  const canApproveLeave = canEditCore || profile.role === "manager";
+  const canManageLeave = canEditCore;
+  const currentYear = new Date().getFullYear();
+  const [leaveTypes, leaveBalances, leaveRequests] = await Promise.all([
+    getLeaveTypes(supabase, profile.organization_id),
+    getLeaveBalances(supabase, id, currentYear),
+    getLeaveRequests(supabase, id),
+  ]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -131,6 +148,7 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
           <TabsTrigger value="contract">Contract</TabsTrigger>
           <TabsTrigger value="rooster">Rooster</TabsTrigger>
           <TabsTrigger value="overuren">Overuren</TabsTrigger>
+          <TabsTrigger value="verlof">Verlof</TabsTrigger>
           <TabsTrigger value="documenten">Documenten</TabsTrigger>
         </TabsList>
 
@@ -333,6 +351,50 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
               </CardHeader>
               <CardContent>
                 <NewOvertimeEntryForm employeeId={id} />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="verlof" className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Saldo {currentYear}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <LeaveBalanceCards leaveTypes={leaveTypes} balances={leaveBalances} year={currentYear} />
+              {canManageLeave && <StartLeaveYearForm employeeId={id} year={currentYear} />}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Aanvragen</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {leaveRequests.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nog geen verlof aangevraagd.</p>
+              )}
+              {leaveRequests.map((request) => (
+                <LeaveRequestRow
+                  key={request.id}
+                  request={request}
+                  employeeId={id}
+                  leaveTypeName={leaveTypes.find((t) => t.id === request.leave_type_id)?.name ?? "Onbekend"}
+                  canApprove={canApproveLeave}
+                  canManage={canManageLeave}
+                />
+              ))}
+            </CardContent>
+          </Card>
+
+          {canRequestLeave && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Verlof aanvragen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NewLeaveRequestForm employeeId={id} leaveTypes={leaveTypes} />
               </CardContent>
             </Card>
           )}
