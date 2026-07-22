@@ -22,6 +22,7 @@ import { getDocuments, getVersionsForDocuments } from "@/lib/services/documents"
 import { getBreakRules, getSchedulePeriods, getScheduleDays } from "@/lib/services/schedules";
 import { getOvertimeEntries, computeOvertimeSummary } from "@/lib/services/overtime";
 import { getLeaveTypes, getLeaveBalances, getLeaveRequests } from "@/lib/services/leave";
+import { getAbsenceRecords, getAbsenceStatusView } from "@/lib/services/absence";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -57,6 +58,11 @@ import {
   NewLeaveRequestForm,
   LeaveRequestRow,
 } from "@/components/employees/leave-forms";
+import {
+  AbsenceRecordCard,
+  NewAbsenceRecordForm,
+  AbsenceStatusCard,
+} from "@/components/employees/absence-forms";
 
 export default async function MedewerkerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -123,6 +129,12 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
     getLeaveRequests(supabase, id),
   ]);
 
+  const canManageAbsence = canEditCore;
+  const canSeeFullAbsence = canEditCore || isSelf;
+  const [absenceRecords, absenceStatuses] = canSeeFullAbsence
+    ? [await getAbsenceRecords(supabase, id), []]
+    : [[], await getAbsenceStatusView(supabase, id)];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -149,6 +161,7 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
           <TabsTrigger value="rooster">Rooster</TabsTrigger>
           <TabsTrigger value="overuren">Overuren</TabsTrigger>
           <TabsTrigger value="verlof">Verlof</TabsTrigger>
+          <TabsTrigger value="verzuim">Verzuim</TabsTrigger>
           <TabsTrigger value="documenten">Documenten</TabsTrigger>
         </TabsList>
 
@@ -397,6 +410,43 @@ export default async function MedewerkerDetailPage({ params }: { params: Promise
                 <NewLeaveRequestForm employeeId={id} leaveTypes={leaveTypes} />
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="verzuim" className="flex flex-col gap-6">
+          {canSeeFullAbsence ? (
+            <>
+              {absenceRecords.length === 0 && (
+                <p className="text-sm text-muted-foreground">Geen ziekmeldingen geregistreerd.</p>
+              )}
+              {absenceRecords.map((record) => (
+                <AbsenceRecordCard
+                  key={record.id}
+                  employeeId={id}
+                  record={record}
+                  editable={canManageAbsence}
+                />
+              ))}
+              {canManageAbsence && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Ziekmelding registreren</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <NewAbsenceRecordForm employeeId={id} />
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <>
+              {absenceStatuses.length === 0 && (
+                <p className="text-sm text-muted-foreground">Geen ziekmeldingen geregistreerd.</p>
+              )}
+              {absenceStatuses.map((record) => (
+                <AbsenceStatusCard key={record.id} record={record} />
+              ))}
+            </>
           )}
         </TabsContent>
 

@@ -13,7 +13,9 @@ Nederlandse HR Portal MVP — personeelsdossiers, contracten, salaris, roosters,
 
 Tijdens het testen bleek de `break_rules`-tabel op het live project leeg te zijn (waarschijnlijk per ongeluk gewist tijdens het uitproberen van de Instellingen-pagina), waardoor Rooster/Overuren/Verlof-berekeningen tijdelijk geen pauzeaftrek toepasten. De twee standaardregels (>5,5u/-30min, >8u/-45min) zijn hersteld.
 
-Zie de roadmap in het functioneel ontwerp voor de volgende fases (verzuim, dashboards, Resend, AFAS-voorbereiding).
+**Fase 8 (verzuim)** is ook klaar: een Verzuim-tab op het dossier met basisregistratie (eerste ziektedag, volledig/gedeeltelijk, arbeidsongeschiktheidspercentage, hersteldatum, opmerkingen — admin/HR beheren, medewerker ziet alleen eigen dossier read-only). Leidinggevenden zien uitsluitend `absence_status_view` (status + data, nooit percentage/notities — al zo gebouwd in Fase 1 conform de goedgekeurde §11.2-beslissing, hier voor het eerst écht gebruikt en getest). De organisatiebrede verzuim-dashboardcijfers (actuele zieken, verzuimpercentage, gemiddelde duur) horen bij Fase 9 (Dashboards) en zijn hier bewust nog niet gebouwd.
+
+Zie de roadmap in het functioneel ontwerp voor de volgende fases (dashboards, Resend, AFAS-voorbereiding).
 
 ## Snel starten
 
