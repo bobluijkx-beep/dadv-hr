@@ -13,9 +13,11 @@ Nederlandse HR Portal MVP — personeelsdossiers, contracten, salaris, roosters,
 
 Tijdens het testen bleek de `break_rules`-tabel op het live project leeg te zijn (waarschijnlijk per ongeluk gewist tijdens het uitproberen van de Instellingen-pagina), waardoor Rooster/Overuren/Verlof-berekeningen tijdelijk geen pauzeaftrek toepasten. De twee standaardregels (>5,5u/-30min, >8u/-45min) zijn hersteld.
 
-**Fase 8 (verzuim)** is ook klaar: een Verzuim-tab op het dossier met basisregistratie (eerste ziektedag, volledig/gedeeltelijk, arbeidsongeschiktheidspercentage, hersteldatum, opmerkingen — admin/HR beheren, medewerker ziet alleen eigen dossier read-only). Leidinggevenden zien uitsluitend `absence_status_view` (status + data, nooit percentage/notities — al zo gebouwd in Fase 1 conform de goedgekeurde §11.2-beslissing, hier voor het eerst écht gebruikt en getest). De organisatiebrede verzuim-dashboardcijfers (actuele zieken, verzuimpercentage, gemiddelde duur) horen bij Fase 9 (Dashboards) en zijn hier bewust nog niet gebouwd.
+**Fase 8 (verzuim)** is ook klaar: een Verzuim-tab op het dossier met basisregistratie (eerste ziektedag, volledig/gedeeltelijk, arbeidsongeschiktheidspercentage, hersteldatum, opmerkingen — admin/HR beheren, medewerker ziet alleen eigen dossier read-only). Leidinggevenden zien uitsluitend `absence_status_view` (status + data, nooit percentage/notities — al zo gebouwd in Fase 1 conform de goedgekeurde §11.2-beslissing, hier voor het eerst écht gebruikt en getest).
 
-Zie de roadmap in het functioneel ontwerp voor de volgende fases (dashboards, Resend, AFAS-voorbereiding).
+**Fase 9 (dashboards)** is klaar: het startscherm toont voor Beheerder/HR/Leidinggevende nu een echt HR-dashboard in plaats van alleen een welkomstkaart — kaarten voor totaal/actieve medewerkers, medewerkers ziek, ziekteverzuimpercentage (dagen-gewogen, niet alleen een koppentelling), gemiddelde verzuimduur, overuren deze maand, openstaande overuren/verlofaanvragen, contracten binnen 90 dagen en verjaardagen komende 30 dagen; een trendgrafiek van overuren over de laatste 6 maanden; en tabellen voor aflopende contracten, verjaardagen en laag verlofsaldo. Alles is automatisch RLS-gescoped — een leidinggevende ziet dezelfde kaarten maar dan beperkt tot het eigen team, zonder dat daar aparte querylogica voor nodig was. Medewerkers houden hun bestaande, simpele welkomstkaart (hun eigen dashboard is al de "Mijn gegevens"-pagina). Het per-medewerker personeelsdashboard uit het functioneel ontwerp was in feite al af — dat is precies wat de dossier-tabs (Persoonlijk t/m Verzuim) al tonen.
+
+Zie de roadmap in het functioneel ontwerp voor de volgende fases (Resend, AFAS-voorbereiding).
 
 ## Snel starten
 
