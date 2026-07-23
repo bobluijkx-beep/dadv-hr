@@ -19,7 +19,11 @@ Tijdens het testen bleek de `break_rules`-tabel op het live project leeg te zijn
 
 **Fase 10 (Resend)** is klaar: een centrale notificatieservice (`lib/services/notifications.ts`) verstuurt de 7 e-mailtypes uit het ontwerp — verlof aangevraagd/goedgekeurd/afgewezen, overuren ingediend/goedgekeurd/aangeboden aan salarisadministratie/verwerkt — en logt elke poging in `notification_log`. Die tabel heeft bewust geen INSERT-policy voor reguliere rollen (alleen admin/HR mogen 'm lezen), dus de service schrijft via de service-role admin-client, nooit via de RLS-scoped client die Server Actions normaal gebruiken. Verzending en logging zijn "fire-and-forget" vanuit de Server Actions: een mislukte e-mail mag de eigenlijke verlof-/overurenactie nooit blokkeren. Getest met een echte Resend-verzending (sandboxmodus, `onboarding@resend.dev`) via de volledige app-flow — bevestigd ontvangen. Voor productieverzending naar échte medewerker-adressen (niet alleen het eigen Resend-accountadres) moet later een eigen domein geverifieerd worden in Resend.
 
-Zie de roadmap in het functioneel ontwerp voor de laatste fase (AFAS-voorbereiding).
+**Fase 11 (AFAS-voorbereiding) is klaar — daarmee zijn alle 11 fases uit de roadmap afgerond.** Conform het ontwerp bevat dit uitsluitend de integratielaag, geen live koppeling: `lib/integrations/afas/types.ts` (het beoogde AFAS Profit-record­formaat, ongeverifieerd tot een echte omgeving beschikbaar is), `mapper.ts` (pure veldmapping), `client.ts` (een `AfasClient`-stub die altijd "niet geconfigureerd/nog niet geïmplementeerd" teruggeeft — er wordt bewust geen gok-URL aangeroepen) en `sync-service.ts` (orchestratie: BSN ontsleutelen, mappen, resultaat loggen naar `integration_mappings`/`integration_sync_log`, tabellen die al in Fase 1 zijn gebouwd). Een read-only "Integraties — AFAS"-sectie op Instellingen (admin) toont de synchronisatiehistorie en heeft een testknop die de volledige pijplijn doorloopt.
+
+Tijdens het testen bleek `integration_sync_log` — net als `notification_log` — bewust geen INSERT-policy voor reguliere rollen te hebben; de eerste versie schreef per ongeluk via de gewone RLS-client en liep vast op een RLS-fout. Opgelost door ook hier de service-role admin-client te gebruiken, zoals bij de notificatieservice.
+
+Zie het functioneel ontwerp voor de volledige roadmap-historie.
 
 ## Snel starten
 
