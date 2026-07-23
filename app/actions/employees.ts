@@ -306,3 +306,35 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
   revalidatePath("/medewerkers");
   redirect(`/medewerkers/${data.id}`);
 }
+
+// ---------------------------------------------------------------------
+// Verwijderen (soft delete) — alleen mogelijk voor al-inactieve medewerkers.
+// Zet deleted_at; verwijdert niets fysiek, zodat contracten/audit-log/etc.
+// bewaard blijven (§11.4: geen hard delete zonder bewaartermijnbeleid).
+// ---------------------------------------------------------------------
+
+const deleteSchema = z.object({ employeeId: z.guid() });
+
+export async function softDeleteEmployee(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = deleteSchema.safeParse({ employeeId: formData.get("employeeId") });
+  if (!parsed.success) return fail("Ongeldige invoer.");
+
+  const supabase = await createClient();
+
+  const { data: employee, error: fetchError } = await supabase
+    .from("employees")
+    .select("is_active")
+    .eq("id", parsed.data.employeeId)
+    .single();
+  if (fetchError) return fail("Medewerker niet gevonden: " + fetchError.message);
+  if (employee.is_active) return fail("Zet de medewerker eerst op inactief voordat je kunt verwijderen.");
+
+  const { error } = await supabase
+    .from("employees")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", parsed.data.employeeId);
+  if (error) return fail("Verwijderen mislukt: " + error.message);
+
+  revalidatePath("/medewerkers");
+  return { error: null, success: true };
+}

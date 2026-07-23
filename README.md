@@ -25,6 +25,8 @@ Tijdens het testen bleek `integration_sync_log` — net als `notification_log` �
 
 Zie het functioneel ontwerp voor de volledige roadmap-historie.
 
+**Post-MVP toevoeging:** medewerkers verwijderen vanuit de lijst. Ontworpen als soft delete (§11.4: geen hard delete zonder bewaartermijnbeleid) — `employees.deleted_at` wordt gezet, contracten/audit-log/etc. blijven bewaard. Uit veiligheid alleen mogelijk voor medewerkers die al op "Inactief" staan; de knop verschijnt daarom pas nadat iemand via de Werk-tab is gedeactiveerd. `listEmployees` sluit soft-deleted rijen nu ook expliciet uit (was eerder een latente hiaat, viel alleen op zodra er voor het eerst iets verwijderd moest worden).
+
 ## Snel starten
 
 ```bash

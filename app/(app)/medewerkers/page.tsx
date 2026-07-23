@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DeleteEmployeeButton } from "@/components/employees/delete-employee-button";
 
 type SearchParams = Promise<{ q?: string; department?: string; status?: string }>;
 
@@ -104,12 +105,13 @@ export default async function MedewerkersPage({ searchParams }: { searchParams: 
                 <TableHead>Functie</TableHead>
                 <TableHead>Afdeling</TableHead>
                 <TableHead>Status</TableHead>
+                {canCreate && <TableHead className="text-right">Acties</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {employees.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={canCreate ? 6 : 5} className="text-center text-muted-foreground">
                     Geen medewerkers gevonden.
                   </TableCell>
                 </TableRow>
@@ -130,6 +132,16 @@ export default async function MedewerkersPage({ searchParams }: { searchParams: 
                       {employee.is_active ? "Actief" : "Inactief"}
                     </Badge>
                   </TableCell>
+                  {canCreate && (
+                    <TableCell className="text-right">
+                      {!employee.is_active && (
+                        <DeleteEmployeeButton
+                          employeeId={employee.id}
+                          employeeName={`${employee.first_name} ${employee.last_name}`}
+                        />
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

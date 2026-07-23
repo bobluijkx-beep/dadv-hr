@@ -27,6 +27,7 @@ export async function listEmployees(supabase: Client, filters: EmployeeListFilte
     .select(
       "id, employee_number, first_name, insertion, last_name, job_title, is_active, department:departments(id, name)",
     )
+    .is("deleted_at", null)
     .order("last_name", { ascending: true });
 
   if (filters.search) {
