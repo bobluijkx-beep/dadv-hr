@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, UserRound, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/auth/session";
 
 type NavItem = {
   href: string;
   label: string;
+  icon: typeof LayoutDashboard;
   roles: UserRole[];
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Dashboard", roles: ["admin", "hr", "manager", "employee"] },
-  { href: "/medewerkers", label: "Medewerkers", roles: ["admin", "hr", "manager"] },
-  { href: "/mijn-gegevens", label: "Mijn gegevens", roles: ["admin", "hr", "manager", "employee"] },
-  { href: "/instellingen", label: "Instellingen", roles: ["admin"] },
+export const NAV_ITEMS: NavItem[] = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "hr", "manager", "employee"] },
+  { href: "/medewerkers", label: "Medewerkers", icon: Users, roles: ["admin", "hr", "manager"] },
+  { href: "/mijn-gegevens", label: "Mijn gegevens", icon: UserRound, roles: ["admin", "hr", "manager", "employee"] },
+  { href: "/instellingen", label: "Instellingen", icon: Settings, roles: ["admin"] },
 ];
 
 export function AppNav({ role }: { role: UserRole }) {
@@ -26,17 +28,19 @@ export function AppNav({ role }: { role: UserRole }) {
     <nav className="flex flex-col gap-1">
       {items.map((item) => {
         const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const Icon = item.icon;
         return (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition-colors",
               isActive
-                ? "bg-secondary text-secondary-foreground"
-                : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             )}
           >
+            <Icon className="size-4.5 shrink-0" />
             {item.label}
           </Link>
         );

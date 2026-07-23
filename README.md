@@ -27,6 +27,14 @@ Zie het functioneel ontwerp voor de volledige roadmap-historie.
 
 **Post-MVP toevoeging:** medewerkers verwijderen vanuit de lijst. Ontworpen als soft delete (§11.4: geen hard delete zonder bewaartermijnbeleid) — `employees.deleted_at` wordt gezet, contracten/audit-log/etc. blijven bewaard. Uit veiligheid alleen mogelijk voor medewerkers die al op "Inactief" staan; de knop verschijnt daarom pas nadat iemand via de Werk-tab is gedeactiveerd. `listEmployees` sluit soft-deleted rijen nu ook expliciet uit (was eerder een latente hiaat, viel alleen op zodra er voor het eerst iets verwijderd moest worden).
 
+**Post-MVP toevoeging: nieuwe huisstijl.** Kleuren/vorm (`app/globals.css`), navigatie (`components/app-nav.tsx`) en een nieuwe bovenbalk (`components/app-header.tsx`) zijn omgezet naar een teal-huisstijl op basis van een aangeleverde referentie-screenshot — de teal-tint is een schatting en later eenvoudig bij te sturen via alleen die tokens. Belangrijkste keuzes:
+- Sidebar met iconen (lucide-react) en een witte "actieve pagina"-pil, in plaats van platte tekstlinks.
+- Een gedeelde bovenbalk (paginasectie-titel + gebruikersmenu met uitloggen) verving het gebruikersblok onderin de sidebar; overbodig geworden dubbele `<h1>`'s op Medewerkers/Instellingen zijn verwijderd.
+- Alle knoppen zijn nu volledig rond (pil-vorm); kaarten/inputs zijn ruimer afgerond via een verhoogde `--radius`-token — dit werkt automatisch door op elke pagina omdat vrijwel alle UI-componenten al de gedeelde design-tokens gebruiken.
+- Dashboard-KPI-tegels renderen nu als gevulde teal-kaarten; tegels met een `warning`/`critical`-tone (bijv. "Openstaande overuren") renderen automatisch als de kaart met gekleurde balk links, zonder dat de aanroepende code hoefde te veranderen.
+- Lettertype gewijzigd naar Manrope (Google Font). Terzijde ontdekt en gerepareerd: de oorspronkelijke shadcn-scaffold koppelde `--font-sans` nooit daadwerkelijk aan de geladen font-variabele (`--font-geist-sans` ≠ `--font-sans`), dus er werd al sinds Fase 1 stilzwijgend op een browser-standaardlettertype teruggevallen — dat is nu gefixt.
+- Dark mode-tokens zijn bijgewerkt maar er is (net als voorheen) geen daadwerkelijke licht/donker-schakelaar in de app; dit was al zo vóór deze wijziging en viel buiten de scope van dit verzoek.
+
 ## Snel starten
 
 ```bash

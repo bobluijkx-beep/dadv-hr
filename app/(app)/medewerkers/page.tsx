@@ -30,14 +30,11 @@ export default async function MedewerkersPage({ searchParams }: { searchParams: 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Medewerkers</h1>
-          <p className="text-sm text-muted-foreground">
-            {profile.role === "manager"
-              ? "Jouw team en jijzelf."
-              : "Alle medewerkers binnen de organisatie."}
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {profile.role === "manager"
+            ? "Jouw team en jijzelf."
+            : "Alle medewerkers binnen de organisatie."}
+        </p>
         {canCreate && (
           <Button nativeButton={false} render={<Link href="/medewerkers/nieuw">Nieuwe medewerker</Link>} />
         )}
